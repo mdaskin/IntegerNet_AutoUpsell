@@ -33,6 +33,19 @@ class IntegerNet_AutoUpsell_Model_Observer
     {
         /** @var Mage_Catalog_Model_Resource_Product_Collection $productsToAdd */
         $productsToAdd = $this->_getProductCategory($product)->getProductCollection();
+        
+        $productsToAdd = Mage::getModel('catalog/product')
+                ->getCollection()
+                ->joinField(
+                        'is_in_stock',
+                        'cataloginventory/stock_item',
+                        'is_in_stock',
+                        'product_id=entity_id',
+                        '{{table}}.stock_id=1',
+                        'left'
+                )
+                ->addAttributeToFilter('is_in_stock', array('eq' => 1));
+        
         $productsToAdd
             ->addStoreFilter()
             ->addAttributeToFilter('price', array('gteq' => $product->getData('price')))
