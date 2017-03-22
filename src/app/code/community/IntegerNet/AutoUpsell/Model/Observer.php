@@ -32,22 +32,17 @@ class IntegerNet_AutoUpsell_Model_Observer
     protected function addItemsFromCategory(RelatedProductCollection $collection, $numberOfItems, Product $product)
     {
         /** @var Mage_Catalog_Model_Resource_Product_Collection $productsToAdd */
-        $productsToAdd = $this->_getProductCategory($product)->getProductCollection();
         
-        $productsToAdd = Mage::getModel('catalog/product')
-                ->getCollection()
-                ->joinField(
-                        'is_in_stock',
-                        'cataloginventory/stock_item',
-                        'is_in_stock',
-                        'product_id=entity_id',
-                        '{{table}}.stock_id=1',
-                        'left'
-                )
-                ->addAttributeToFilter('is_in_stock', array('eq' => 1));
+        $stockIds = Mage::getModel('cataloginventory/stock_item')
+            ->getCollection()
+            ->addQtyFilter('>=', 1) //can be ->addQtyFilter('>=', 30), depending on requirement
+            ->getAllIds();
+        
+        $productsToAdd = $this->_getProductCategory($product)->getProductCollection();
         
         $productsToAdd
             ->addStoreFilter()
+            ->addIdFilter($stockIds)
             ->addAttributeToFilter('price', array('gteq' => $product->getData('price')))
             ->addIdFilter([$product->getId()] + $collection->getAllIds(), true)
             ->setVisibility(Mage::getSingleton('catalog/product_visibility')->getVisibleInCatalogIds());
